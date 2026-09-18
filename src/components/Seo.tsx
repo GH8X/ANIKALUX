@@ -5,6 +5,8 @@ interface SeoProps {
   description: string;
   /** Absolute or root-relative image path used for the Open Graph preview. */
   image?: string;
+  /** Optional keyword list managed from Admin → SEO. */
+  keywords?: string;
   type?: "website" | "product" | "article";
   /** JSON-LD structured data injected for the current route. */
   jsonLd?: Record<string, unknown> | null;
@@ -32,10 +34,19 @@ function upsertLink(rel: string, href: string) {
 }
 
 /** Lightweight head manager — keeps meta tags in sync with the active route. */
-export function Seo({ title, description, image = "/brand/logo.png", type = "website", jsonLd, noindex }: SeoProps) {
+export function Seo({
+  title,
+  description,
+  image = "/brand/logo.png",
+  keywords,
+  type = "website",
+  jsonLd,
+  noindex,
+}: SeoProps) {
   useEffect(() => {
     document.title = title;
     upsertMeta('meta[name="description"]', "name", "description", description);
+    if (keywords) upsertMeta('meta[name="keywords"]', "name", "keywords", keywords);
     upsertMeta('meta[property="og:title"]', "property", "og:title", title);
     upsertMeta('meta[property="og:description"]', "property", "og:description", description);
     upsertMeta('meta[property="og:type"]', "property", "og:type", type);
@@ -49,7 +60,7 @@ export function Seo({ title, description, image = "/brand/logo.png", type = "web
       noindex ? "noindex, follow" : "index, follow, max-image-preview:large",
     );
     upsertLink("canonical", `${window.location.origin}${window.location.pathname}`);
-  }, [title, description, image, type, noindex]);
+  }, [title, description, image, keywords, type, noindex]);
 
   useEffect(() => {
     const id = "route-json-ld";

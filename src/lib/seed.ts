@@ -1,4 +1,11 @@
-import type { Category, Database, I18nText, Product, SiteSettings } from "./types";
+import type {
+  Category,
+  Database,
+  HomeSectionState,
+  I18nText,
+  Product,
+  SiteSettings,
+} from "./types";
 
 const t = (primary: string, fr?: string, ar?: string): I18nText => ({
   primary,
@@ -53,7 +60,71 @@ export const defaultSettings: SiteSettings = {
   newArrivalIds: [],
   bestSellerIds: [],
   adminPassword: "anika-lux",
+  announcement: {
+    // Ships disabled: the owner decides what to announce, nothing is invented.
+    enabled: false,
+    text: t(
+      "Wholesale only — new collections every season",
+      "Vente en gros uniquement — nouvelles collections chaque saison",
+      "بيع بالجملة فقط — مجموعات جديدة كل موسم",
+    ),
+    href: "/wholesale",
+  },
+  seo: {
+    title: "Al-Aniqa Lux | Wholesale Clothing & Luxury Pajamas",
+    description: t(
+      "Premium clothing and luxury pajamas available at wholesale prices.",
+      "Vêtements haut de gamme et pyjamas de luxe à prix de gros.",
+      "ملابس فاخرة وبيجامات راقية بأسعار الجملة.",
+    ),
+    keywords:
+      "wholesale clothing Algeria, luxury pajamas wholesale, vetements en gros algerie, pyjamas de luxe, بيع بالجملة",
+    ogImageUrl: null,
+  },
+  location: {
+    mapsUrl: "",
+    lat: "",
+    lng: "",
+    hours: t("", "", ""),
+  },
+  social: { youtube: "", telegram: "", hidden: [] },
+  promotion: {
+    enabled: false,
+    badge: t("Seasonal offer", "Offre saisonnière", "عرض الموسم"),
+    title: t(
+      "New season, wholesale ready",
+      "Nouvelle saison, prête en gros",
+      "موسم جديد، جاهز بالجملة",
+    ),
+    text: t(
+      "Fresh lines landing now — ask for the volume price list.",
+      "Nouvelles lignes disponibles — demandez le tarif de gros.",
+      "خطوط جديدة متوفرة — اطلب قائمة أسعار الجملة.",
+    ),
+    ctaLabel: t("Request the price list", "Demander le tarif", "اطلب قائمة الأسعار"),
+    ctaHref: "/wholesale",
+    mediaUrl: null,
+  },
+  // Matches the order the homepage already rendered, so nothing moves on
+  // upgrade. Sections with no content stay hidden until the owner fills them.
+  homeSections: [
+    { key: "hero", visible: true },
+    { key: "categories", visible: true },
+    { key: "promotion", visible: false },
+    { key: "newArrivals", visible: true },
+    { key: "bestSellers", visible: true },
+    { key: "featured", visible: true },
+    { key: "why", visible: true },
+    { key: "testimonials", visible: true },
+    { key: "faq", visible: true },
+    { key: "about", visible: true },
+    { key: "location", visible: true },
+    { key: "cta", visible: true },
+  ],
 };
+
+/** Section order/visibility as a plain list — used when stored data predates it. */
+export const defaultHomeSections: HomeSectionState[] = defaultSettings.homeSections;
 
 const cat = (
   id: string,
@@ -112,6 +183,8 @@ interface SeedProductInput {
   isBest?: boolean;
   isFeatured?: boolean;
   ageDays: number;
+  /** Optional demo starting stock; defaults to 60 pieces. */
+  stock?: number;
 }
 
 const seedInputs: SeedProductInput[] = [
@@ -257,6 +330,11 @@ export const defaultProducts: Product[] = seedInputs.map((input, index) => {
     isFeatured: Boolean(input.isFeatured),
     active: true,
     createdAt: new Date(Date.now() - input.ageDays * 86400000 - index * 3600000).toISOString(),
+    badge: "",
+    // Demo stock so the dashboard shows a real inventory workflow from day one.
+    stock: input.stock ?? 60,
+    videoUrl: null,
+    order: index + 1,
   };
 });
 
@@ -270,4 +348,9 @@ export const defaultDatabase: Database = {
   categories: defaultCategories,
   products: defaultProducts,
   requests: [],
+  // Testimonials and FAQ ship empty on purpose: they are the owner's own words
+  // about their own customers, so inventing them would be misleading.
+  testimonials: [],
+  faq: [],
+  media: [],
 };

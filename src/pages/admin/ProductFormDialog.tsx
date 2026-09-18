@@ -45,6 +45,10 @@ function emptyProduct(categoryId: string): Product {
     isFeatured: false,
     active: true,
     createdAt: new Date().toISOString(),
+    badge: "",
+    stock: null,
+    videoUrl: null,
+    order: 0,
   };
 }
 
@@ -197,6 +201,45 @@ export function ProductFormDialog({ open, onOpenChange, product }: ProductFormDi
                   onChange={(event) => patch({ minOrderQty: Number(event.target.value) || 1 })}
                 />
               </div>
+
+              <div>
+                <Label htmlFor="product-stock">{t.admin.stock}</Label>
+                <Input
+                  id="product-stock"
+                  className="mt-2"
+                  type="number"
+                  min={0}
+                  inputMode="numeric"
+                  value={draft.stock ?? ""}
+                  onChange={(event) =>
+                    patch({ stock: event.target.value === "" ? null : Number(event.target.value) })
+                  }
+                  placeholder="60"
+                />
+                <p className="mt-1.5 text-xs text-muted-foreground">{t.admin.stockHint}</p>
+              </div>
+
+              <div>
+                <Label htmlFor="product-badge">{t.admin.badge}</Label>
+                <Input
+                  id="product-badge"
+                  className="mt-2"
+                  value={draft.badge}
+                  onChange={(event) => patch({ badge: event.target.value })}
+                  placeholder={t.admin.badgePlaceholder}
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="product-video">{t.admin.video}</Label>
+              <Input
+                id="product-video"
+                className="mt-2"
+                value={draft.videoUrl ?? ""}
+                onChange={(event) => patch({ videoUrl: event.target.value || null })}
+                placeholder="https://…/product.mp4"
+              />
             </div>
 
             <div>

@@ -59,6 +59,23 @@ export interface Product {
   isFeatured: boolean;
   active: boolean;
   createdAt: string;
+  /** Optional promotional label shown on the card, e.g. "Limited". */
+  badge: string;
+  /** null means "not tracked" so a catalogue can ship before stock is counted. */
+  stock: number | null;
+  videoUrl: string | null;
+  /** Manual merchandising order — admin controls it with move up / move down. */
+  order: number;
+}
+
+/** One line of a multi-product wholesale inquiry. */
+export interface InquiryItem {
+  productId: string;
+  code: string;
+  name: string;
+  color: string;
+  size: string;
+  quantity: number;
 }
 
 export const REQUEST_STATUSES = [
@@ -83,6 +100,114 @@ export interface WholesaleRequest {
   status: RequestStatus;
   createdAt: string;
   updatedAt: string;
+  /** Internal admin notes — never shown on the public site. */
+  notes: string;
+  /** Archived inquiries stay searchable but leave the active pipeline. */
+  archived: boolean;
+  /** Present when the inquiry came from the multi-product inquiry list. */
+  items?: InquiryItem[];
+}
+
+/* --------------------------------------------------------------- CMS models */
+
+export interface Testimonial {
+  id: string;
+  author: string;
+  businessName: string;
+  wilaya: string;
+  quote: I18nText;
+  rating: number;
+  active: boolean;
+  order: number;
+}
+
+export interface FaqItem {
+  id: string;
+  question: I18nText;
+  answer: I18nText;
+  active: boolean;
+  order: number;
+}
+
+export interface MediaAsset {
+  id: string;
+  url: string;
+  name: string;
+  type: "image" | "video";
+  createdAt: string;
+}
+
+/* ------------------------------------------------------------- Site content */
+
+export const SOCIAL_KEYS = [
+  "whatsapp",
+  "instagram",
+  "facebook",
+  "tiktok",
+  "youtube",
+  "telegram",
+] as const;
+
+export type SocialKey = (typeof SOCIAL_KEYS)[number];
+
+/** Keys of the homepage sections the owner can reorder or hide. */
+export const HOME_SECTIONS = [
+  "hero",
+  "categories",
+  "promotion",
+  "newArrivals",
+  "bestSellers",
+  "featured",
+  "why",
+  "testimonials",
+  "faq",
+  "about",
+  "location",
+  "cta",
+] as const;
+
+export type HomeSectionKey = (typeof HOME_SECTIONS)[number];
+
+export interface HomeSectionState {
+  key: HomeSectionKey;
+  visible: boolean;
+}
+
+export interface AnnouncementSettings {
+  enabled: boolean;
+  text: I18nText;
+  href: string;
+}
+
+export interface SeoSettings {
+  title: string;
+  description: I18nText;
+  keywords: string;
+  ogImageUrl: string | null;
+}
+
+export interface LocationSettings {
+  mapsUrl: string;
+  lat: string;
+  lng: string;
+  hours: I18nText;
+}
+
+/** YouTube and Telegram plus the on/off state of every network. */
+export interface SocialSettings {
+  youtube: string;
+  telegram: string;
+  hidden: SocialKey[];
+}
+
+export interface PromotionSettings {
+  enabled: boolean;
+  badge: I18nText;
+  title: I18nText;
+  text: I18nText;
+  ctaLabel: I18nText;
+  ctaHref: string;
+  mediaUrl: string | null;
 }
 
 export interface SiteSettings {
@@ -112,6 +237,13 @@ export interface SiteSettings {
   newArrivalIds: string[];
   bestSellerIds: string[];
   adminPassword: string;
+  announcement: AnnouncementSettings;
+  seo: SeoSettings;
+  location: LocationSettings;
+  social: SocialSettings;
+  promotion: PromotionSettings;
+  /** Homepage section order + visibility, driven by the Homepage editor. */
+  homeSections: HomeSectionState[];
 }
 
 export interface Database {
@@ -119,4 +251,8 @@ export interface Database {
   categories: Category[];
   products: Product[];
   requests: WholesaleRequest[];
+  testimonials: Testimonial[];
+  faq: FaqItem[];
+  /** Flat upload library reused by every image/video picker in the admin. */
+  media: MediaAsset[];
 }

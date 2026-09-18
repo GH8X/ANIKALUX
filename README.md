@@ -47,10 +47,21 @@ Default dashboard password: **`anika-lux`** — change it in **Admin → Brand �
 | Tab | What you can manage |
 | --- | --- |
 | **Overview** | Catalogue counts, new requests, recent activity |
-| **Products** | Add / edit / delete, multi-image upload, set main image, name, code, category, description, price, minimum wholesale quantity, sizes, colours, mark as New / Best Seller / Featured / hidden |
+| **Products** | Add / edit / duplicate / delete, reorder, multi-image upload, set main image, name, code, category, description, price, minimum wholesale quantity, sizes, colours, stock, video, badge, mark as New / Best Seller / Featured / hidden |
 | **Categories** | Add, edit, delete, reorder, assign to the Pajamas or Clothing house |
-| **Requests** | Every wholesale request with name, business, phone, wilaya, products, quantity, date, and the **New → Contacted → Confirmed → Completed** workflow |
-| **Brand** | Official logo, hero headline/subtitle/media, About text, phone, WhatsApp, email, Instagram, Facebook, TikTok, address, featured / new arrivals / best sellers, dashboard password, data reset |
+| **Homepage** | Section order and visibility (hero → categories → promotion → new arrivals → best sellers → featured → why us → testimonials → FAQ → about → location → CTA), hero copy and media, promotion banner, announcement bar |
+| **Media** | Upload images, add images or videos by URL, preview, copy URL, delete — one shared library for every section and product |
+| **Requests** | Every wholesale request with name, business, phone, wilaya, structured article lines (name, SKU, colour, size, quantity), search, status filter, internal notes, and the **New → Contacted → Confirmed → Completed → Cancelled** workflow plus archive |
+| **Testimonials** | Quotes from stores you supply — author, business, wilaya, rating, show/hide, reorder |
+| **FAQ** | Question / answer pairs shown on the homepage and emitted as FAQPage structured data |
+| **Social** | Instagram, Facebook, TikTok, WhatsApp, YouTube and Telegram — link, show/hide per network |
+| **Location** | Address, Google Maps URL, latitude, longitude, opening hours, phone, WhatsApp |
+| **SEO** | Site title, meta description, keywords, Open Graph image |
+| **Settings** | Business name, tagline, phone, WhatsApp, email, address, opening hours |
+| **Preview** | The homepage at desktop, tablet and mobile widths, refreshable |
+| **Brand** | Official logo, hero media, About text, featured / new arrivals / best sellers curation, dashboard password, data reset |
+
+Every tab edits the same `settings` record the public pages read, so **Homepage**/**Settings**/**Social** overlap deliberately rather than keeping separate copies. Content is multilingual: primary text plus optional EN/FR/AR overrides on every field.
 
 All content — About text, contact details, homepage copy — is editable. **No company information or contact details were invented**: every contact field ships empty and renders a neutral "not published yet" state until you fill it in.
 
@@ -60,7 +71,8 @@ All content — About text, contact details, homepage copy — is editable. **No
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Homepage — hero, collections, New Arrivals, Best Sellers, Featured, Why Choose Al-Aniqa Lux, About, CTA |
+| `/` | Homepage — hero, collections, New Arrivals, Best Sellers, Featured, Why Choose Al-Aniqa Lux, About, CTA (order and visibility owner-controlled) |
+| `/` sections | Promotion banner, Testimonials, FAQ, Location with Google map, wholesale CTA — each hidden until the owner publishes content for it |
 | `/products` | Full wholesale catalogue |
 | `/pajamas` · `/clothing` | Catalogue scoped to each house |
 | `/new-arrivals` | Newest lines |
@@ -70,6 +82,10 @@ All content — About text, contact details, homepage copy — is editable. **No
 | `/auth` · `/admin` | Administrator sign-in and dashboard |
 
 The catalogue supports search, category / size / colour filtering, five sort modes, a responsive grid, and filters that live in the URL so any view is shareable.
+
+### Wholesale ordering
+
+Shoppers can collect several products into one inquiry (colour, size and quantity per line) and send it as a single structured WhatsApp message containing the customer name, each product's name, SKU, colour, size and quantity, plus notes. The inquiry is stored in **Requests** at the same time, so nothing depends on WhatsApp alone. The existing single-product WhatsApp and contact flows are unchanged.
 
 ---
 
@@ -145,14 +161,24 @@ The hosting pipeline runs a command **after** the build. It shells that command 
 sh: 1: vite: not found      ← the post-build server command
 ```
 
-That is why the error appeared *after* a successful build. `dev` and `preview` therefore invoke Vite through Node rather than relying on `PATH`:
+That is why the error appeared *after* a successful build. Every Vite-invoking script therefore goes through Node rather than relying on `PATH`:
 
 ```json
 "dev":     "node ./node_modules/vite/bin/vite.js --host 0.0.0.0",
+"build":   "node ./node_modules/vite/bin/vite.js build",
 "preview": "node ./node_modules/vite/bin/vite.js preview --host 0.0.0.0"
 ```
 
-`node` is a global binary (verified as `/usr/bin/node`), so these resolve in any shell, with or without `node_modules/.bin` on `PATH`. `build` stays as the plain `vite build` the platform expects for Vite framework detection — it is the step that already succeeds.
+`node` is a global binary (here `/usr/bin/node`), so these resolve in any shell, with or without `node_modules/.bin` on `PATH`. The build still runs exactly Vite's production build and still writes `dist/`.
+
+Why all three, not just the server commands: the build log shows the pipeline executing the command string **directly through a shell** (it contains Vite's own banner but none of the `$ vite build` echo a package-manager runner prints). Any `vite`-prefixed string is therefore shelled without `node_modules/.bin` on `PATH`, so a bare `vite` fails wherever it appears — including the build command itself if it is ever run again in that environment.
+
+Reproduced side by side, both in `env -i PATH=/usr/local/bin:/usr/bin:/bin sh -c …`:
+
+| Command | Exit | Output |
+| --- | --- | --- |
+| `vite build` (before) | **127** | `sh: 1: vite: not found` |
+| `node ./node_modules/vite/bin/vite.js build` (after) | **0** | `✓ built in 7.28s`, 15 assets in `dist/` |
 
 ---
 

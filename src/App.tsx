@@ -1,12 +1,15 @@
 import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
+import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
 import { WhatsAppFab } from "@/components/layout/WhatsAppFab";
+import { InquiryFab } from "@/components/InquiryFab";
 import { RequireAuth } from "@/components/RequireAuth";
 import { ProductGridSkeleton } from "@/components/States";
 import { I18nProvider, useI18n } from "@/lib/i18n";
+import { InquiryProvider } from "@/lib/inquiry";
 import { StoreProvider } from "@/lib/store";
 import { Home } from "@/pages/Home";
 
@@ -54,6 +57,7 @@ function Shell() {
   return (
     <div className="flex min-h-[100svh] flex-col">
       <ScrollToTop />
+      <AnnouncementBar />
       <Header />
       <main id="main" className="flex-1">
         <Suspense fallback={<RouteFallback />}>
@@ -82,6 +86,7 @@ function Shell() {
       </main>
       <Footer />
       <WhatsAppFab />
+      <InquiryFab />
       <Toaster
         position="top-center"
         closeButton
@@ -102,9 +107,11 @@ export default function App() {
   return (
     <I18nProvider>
       <StoreProvider>
-        <BrowserRouter>
-          <Shell />
-        </BrowserRouter>
+        <InquiryProvider>
+          <BrowserRouter>
+            <Shell />
+          </BrowserRouter>
+        </InquiryProvider>
       </StoreProvider>
     </I18nProvider>
   );

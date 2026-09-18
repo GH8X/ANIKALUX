@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
+  Film,
   Layers,
   MessageCircle,
   Package,
@@ -25,18 +26,82 @@ import { cn, formatPrice, whatsappLink } from "@/lib/utils";
 function Gallery({ product }: { product: Product }) {
   const { t } = useI18n();
   const [index, setIndex] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const gesture = useRef<{ x: number; y: number; at: number } | null>(null);
+  const lastTap = useRef(0);
 
   useEffect(() => {
     setIndex(0);
+    setZoomed(false);
+    setShowVideo(false);
   }, [product.id]);
 
   const hasImages = product.images.length > 1;
 
+  const show = (next: number) => {
+    setZoomed(false);
+    setShowVideo(false);
+    setIndex(((next % product.images.length) + product.images.length) % product.images.length);
+  };
+
+  /** Touch-only gestures: horizontal swipe moves photos, double tap zooms. */
+  const onPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType !== "touch") return;
+    gesture.current = { x: event.clientX, y: event.clientY, at: Date.now() };
+  };
+
+  const onPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const start = gesture.current;
+    gesture.current = null;
+    if (event.pointerType !== "touch" || !start) return;
+
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+
+    if (Math.abs(dx) < 12 && Math.abs(dy) < 12 && Date.now() - start.at < 300) {
+      const now = Date.now();
+      if (now - lastTap.current < 300) {
+        setZoomed((value) => !value);
+        lastTap.current = 0;
+      } else {
+        lastTap.current = now;
+      }
+      return;
+    }
+
+    if (!hasImages || zoomed) return;
+    if (Math.abs(dx) > 44 && Math.abs(dy) < 70) show(index + (dx < 0 ? 1 : -1));
+  };
+
   return (
     <div className="space-y-4">
-      <div className="group relative overflow-hidden rounded-lg border border-border/70 bg-muted shadow-soft">
-        <div className="aspect-[4/5] w-full">
-          <ProductArt product={product} eager />
+      <div
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        className={cn(
+          "group relative overflow-hidden rounded-lg border border-border/70 bg-muted shadow-soft",
+          zoomed && "cursor-zoom-out",
+        )}
+        style={{ touchAction: "pan-y" }}
+      >
+        <div
+          className={cn(
+            "aspect-[4/5] w-full transition-transform duration-300 ease-luxe",
+            zoomed && "scale-[1.7]",
+          )}
+        >
+          {showVideo && product.videoUrl ? (
+            <video
+              src={product.videoUrl}
+              controls
+              playsInline
+              preload="metadata"
+              className="h-full w-full bg-wine-950 object-cover"
+            />
+          ) : (
+            <ProductArt product={product} eager />
+          )}
         </div>
 
         {hasImages && (
@@ -44,7 +109,7 @@ function Gallery({ product }: { product: Product }) {
             <button
               type="button"
               aria-label={t.product.prevImage}
-              onClick={() => setIndex((i) => (i - 1 + product.images.length) % product.images.length)}
+              onClick={() => show(index - 1)}
               className="absolute start-3 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-background/85 text-foreground shadow-soft backdrop-blur transition-opacity hover:bg-background"
             >
               <ChevronLeft className="size-4 rtl:rotate-180" aria-hidden="true" />
@@ -52,7 +117,7 @@ function Gallery({ product }: { product: Product }) {
             <button
               type="button"
               aria-label={t.product.nextImage}
-              onClick={() => setIndex((i) => (i + 1) % product.images.length)}
+              onClick={() => show(index + 1)}
               className="absolute end-3 top-1/2 grid size-9 -translate-y-1/2 place-items-center rounded-full bg-background/85 text-foreground shadow-soft backdrop-blur transition-opacity hover:bg-background"
             >
               <ChevronRight className="size-4 rtl:rotate-180" aria-hidden="true" />
@@ -68,13 +133,33 @@ function Gallery({ product }: { product: Product }) {
         </div>
       </div>
 
+      {product.videoUrl && (
+        <button
+          type="button"
+          onClick={() => {
+            setShowVideo(true);
+            setZoomed(false);
+          }}
+          aria-pressed={showVideo}
+          className={cn(
+            "inline-flex items-center gap-2 rounded-md border px-3.5 py-2 text-[0.78rem] font-medium transition-colors",
+            showVideo
+              ? "border-primary bg-primary text-primary-foreground"
+              : "border-border text-muted-foreground hover:border-primary/40 hover:text-primary",
+          )}
+        >
+          <Film className="size-3.5" aria-hidden="true" />
+          {t.product.video}
+        </button>
+      )}
+
       {product.images.length > 0 && (
         <ul className="grid grid-cols-5 gap-2.5" aria-label={t.product.gallery}>
           {product.images.map((image, imageIndex) => (
             <li key={image.id}>
               <button
                 type="button"
-                onClick={() => setIndex(imageIndex)}
+                onClick={() => show(imageIndex)}
                 aria-current={imageIndex === index}
                 className={cn(
                   "block aspect-square w-full overflow-hidden rounded-md border bg-muted transition-all duration-300",
