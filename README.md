@@ -122,6 +122,44 @@ That is Bun's *exact* error for `bunx build`, i.e. the build step invoking a bar
 
 `build` is intentionally just `vite build`: it emits static output into `dist/` and exits. Type checking is a separate `typecheck` script so a type error can never leave a deploy without a build artifact.
 
+### Measured evidence for the root cause
+
+Reproduced by installing into a clean checkout (tracked files only):
+
+| Install mode | Packages | `node_modules/vite` |
+| --- | --- | --- |
+| `bun install` | 195 | present |
+| `bun install --production` **with `vite` in `devDependencies`** | **68** | **absent** → `sh: 1: vite: not found` |
+| `bun install --production` / `npm install --omit=dev` (current `package.json`) | 195 | present |
+
+`sh: 1: vite: not found` is what a POSIX shell prints when the `vite` binary does not exist, so a production-only install with Vite classified as a dev dependency produces that error verbatim — and *only* that error, with no mention of the missing dependency.
+
+The second error, `error: could not determine executable to run for package build`, is Bun's exact text for `bunx build` — a bare `build` word read as an npm package named “build”. It occurs when no `build` executable exists (for example before `package.json` was committed).
+
+### 3. `dev` / `preview` never shell out to a bare `vite`
+
+The hosting pipeline runs a command **after** the build. It shells that command through a POSIX shell that does **not** have `node_modules/.bin` on `PATH`, so a bare `vite` there fails:
+
+```
+✓ built in 7.67s            ← build already succeeded, dist/ written
+sh: 1: vite: not found      ← the post-build server command
+```
+
+That is why the error appeared *after* a successful build. `dev` and `preview` therefore invoke Vite through Node rather than relying on `PATH`:
+
+```json
+"dev":     "node ./node_modules/vite/bin/vite.js --host 0.0.0.0",
+"preview": "node ./node_modules/vite/bin/vite.js preview --host 0.0.0.0"
+```
+
+`node` is a global binary (verified as `/usr/bin/node`), so these resolve in any shell, with or without `node_modules/.bin` on `PATH`. `build` stays as the plain `vite build` the platform expects for Vite framework detection — it is the step that already succeeds.
+
+---
+
+### Preview port
+
+`vite preview` reads `preview.*` from `vite.config.ts` and defaults to `localhost:4173`; it ignores both `server.*` and the injected `PORT`. The config therefore sets `preview.host` / `preview.port` too, so previewing the built output is reachable on the assigned port.
+
 ---
 
 ## 7. Architecture & scaling

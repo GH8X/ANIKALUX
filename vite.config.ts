@@ -16,6 +16,13 @@ export default defineConfig({
     // Freebuff requires HMR to remain disabled.
     hmr: false,
   },
+  preview: {
+    // `vite preview` reads `preview.*`, not `server.*`, and defaults to port
+    // 4173 bound to localhost — so a host that previews the built output could
+    // not reach it. Mirror the dev server: all interfaces, injected port.
+    host: "0.0.0.0",
+    port: Number(process.env.PORT) || 4173,
+  },
   build: {
     outDir: "dist",
     sourcemap: false,
