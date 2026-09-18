@@ -56,7 +56,11 @@ function normalize(parsed: Partial<Database> | null): Database {
   const settings: SiteSettings = {
     ...defaultDatabase.settings,
     ...stored,
-    brand: { ...defaultDatabase.settings.brand, ...(stored.brand ?? {}) },
+    brand: {
+      ...defaultDatabase.settings.brand,
+      ...(stored.brand ?? {}),
+      logoHistory: stored.brand?.logoHistory ?? [],
+    },
     hero: { ...defaultDatabase.settings.hero, ...(stored.hero ?? {}) },
     contact: { ...defaultDatabase.settings.contact, ...(stored.contact ?? {}) },
     announcement: { ...defaultDatabase.settings.announcement, ...(stored.announcement ?? {}) },

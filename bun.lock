@@ -6,6 +6,7 @@
       "name": "anika-lux",
       "dependencies": {
         "@anika-lux/build-runner": "file:tools/build-runner",
+        "@anika-lux/vite-shim": "file:tools/vite-shim",
         "@radix-ui/react-checkbox": "^1.1.2",
         "@radix-ui/react-dialog": "^1.1.2",
         "@radix-ui/react-dropdown-menu": "^2.1.2",
@@ -38,6 +39,8 @@
     "@alloc/quick-lru": ["@alloc/quick-lru@5.3.0", "", {}, "sha512-U4+70Pc5ZS9osnCBCE5Jha/ciHM+Yp+CNMNC/7HvYbNRk1Ldd+f7qO65W5qfhu/TCv+/ozljlXXe9Nj8419DMA=="],
 
     "@anika-lux/build-runner": ["@anika-lux/build-runner@file:tools/build-runner", { "bin": { "build": "./index.mjs" } }],
+
+    "@anika-lux/vite-shim": ["@anika-lux/vite-shim@file:tools/vite-shim", { "bin": { "vite": "./index.mjs" } }],
 
     "@babel/code-frame": ["@babel/code-frame@7.29.7", "", { "dependencies": { "@babel/helper-validator-identifier": "^7.29.7", "js-tokens": "^4.0.0", "picocolors": "^1.1.1" } }, "sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw=="],
 

@@ -16,7 +16,9 @@
     />
     <meta name="robots" content="index, follow, max-image-preview:large" />
     <meta name="author" content="Al-Aniqa Lux" />
-    <link rel="canonical" href="/" />
+    <!-- __SITE_URL__ is stamped at build time (see stampSiteUrl in vite.config.ts).
+         Canonical and Open Graph urls must be absolute for crawlers. -->
+    <link rel="canonical" href="__SITE_URL__/" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
@@ -26,7 +28,7 @@
       property="og:description"
       content="Premium clothing and luxury pajamas available at wholesale prices. Serving boutiques and resellers across Algeria."
     />
-    <meta property="og:image" content="/brand/logo.png" />
+    <meta property="og:image" content="__SITE_URL__/brand/logo.png" />
     <meta property="og:locale" content="en_US" />
     <meta property="og:locale:alternate" content="fr_FR" />
     <meta property="og:locale:alternate" content="ar_DZ" />
@@ -38,10 +40,11 @@
       name="twitter:description"
       content="Premium clothing and luxury pajamas available at wholesale prices."
     />
-    <meta name="twitter:image" content="/brand/logo.png" />
+    <meta name="twitter:image" content="__SITE_URL__/brand/logo.png" />
 
+    <!-- Fallback mark. LogoFavicon swaps these for the official logo once one
+         is published, so the URL is never hard-coded. -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/brand/logo.png" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -57,7 +60,7 @@
         "name": "Al-Aniqa Lux",
         "alternateName": "الأنيقة Lux",
         "description": "Algerian fashion wholesale brand specialising in elegant clothing and premium pajamas.",
-        "logo": "/brand/logo.png",
+        "logo": "__SITE_URL__/brand/logo.png",
         "areaServed": { "@type": "Country", "name": "Algeria" },
         "knowsLanguage": ["en", "fr", "ar"]
       }

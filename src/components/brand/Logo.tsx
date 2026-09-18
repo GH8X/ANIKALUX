@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
  * it is rendered with `object-contain` inside a fixed box so its proportions
  * are preserved exactly as supplied.
  */
-const CANDIDATE_PATHS = [
+export const CANDIDATE_PATHS = [
   "/brand/logo.png",
   "/brand/logo.svg",
   "/brand/logo.webp",
@@ -17,7 +17,12 @@ const CANDIDATE_PATHS = [
   "/brand/logo.jpeg",
 ];
 
-function useOfficialLogo() {
+/**
+ * Resolves the official logo: the URL saved in the CMS first, otherwise the
+ * first official file found in `public/brand/`. Exported so the favicon and the
+ * admin preview render exactly the same asset as the header and footer.
+ */
+export function useOfficialLogoSrc() {
   const { settings } = useStore();
   const [discovered, setDiscovered] = useState<string | null>(null);
 
@@ -57,23 +62,26 @@ interface LogoProps {
   showHint?: boolean;
 }
 
-const SIZES: Record<NonNullable<LogoProps["size"]>, string> = {
-  sm: "h-9 w-9",
-  md: "h-11 w-11",
+/** Fixed square boxes. `object-contain` letterboxes inside them, so a wide or
+ * tall logo is never stretched — only the box around it changes shape. */
+/** Exported so the admin preview renders the logo at exactly these sizes. */
+export const LOGO_SIZES: Record<NonNullable<LogoProps["size"]>, string> = {
+  sm: "h-10 w-10",
+  md: "h-12 w-12",
   lg: "h-16 w-16",
   xl: "h-24 w-24 sm:h-28 sm:w-28",
 };
 
 export function Logo({ className, size = "md", showHint = false }: LogoProps) {
-  const src = useOfficialLogo();
+  const src = useOfficialLogoSrc();
   const { settings } = useStore();
-  const box = SIZES[size];
+  const box = LOGO_SIZES[size];
 
   if (src) {
     return (
       <img
         src={src}
-        alt={`${settings.brand.name} — logo officiel`}
+        alt={settings.brand.name}
         className={cn("object-contain", box, className)}
         loading="eager"
         decoding="async"

@@ -1,42 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Sitemaps require absolute urls: the origin is stamped in at build time
+     (see the stampSiteUrl plugin in vite.config.ts). Set SITE_URL in the
+     hosting environment to emit them. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>/</loc>
+    <loc>__SITE_URL__/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
   <url>
-    <loc>/products</loc>
+    <loc>__SITE_URL__/products</loc>
     <changefreq>weekly</changefreq>
     <priority>0.9</priority>
   </url>
   <url>
-    <loc>/pajamas</loc>
+    <loc>__SITE_URL__/pajamas</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>/clothing</loc>
+    <loc>__SITE_URL__/clothing</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>/new-arrivals</loc>
+    <loc>__SITE_URL__/new-arrivals</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>/about</loc>
+    <loc>__SITE_URL__/about</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>/contact</loc>
+    <loc>__SITE_URL__/contact</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
   <url>
-    <loc>/wholesale</loc>
+    <loc>__SITE_URL__/wholesale</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
   </url>

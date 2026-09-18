@@ -785,7 +785,6 @@ export function Home() {
       <Seo
         title={settings.seo.title || "Al-Aniqa Lux | Wholesale Clothing & Luxury Pajamas"}
         description={tx(settings.seo.description, t.brand.description)}
-        image={settings.seo.ogImageUrl ?? undefined}
         keywords={settings.seo.keywords || undefined}
         jsonLd={itemListLd}
       />

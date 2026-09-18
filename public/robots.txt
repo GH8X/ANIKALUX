@@ -3,4 +3,6 @@ Allow: /
 Disallow: /admin
 Disallow: /auth
 
-Sitemap: /sitemap.xml
+# Absolute in production — the origin is stamped in at build time
+# (see stampSiteUrl in vite.config.ts).
+Sitemap: __SITE_URL__/sitemap.xml

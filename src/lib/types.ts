@@ -214,6 +214,8 @@ export interface SiteSettings {
   brand: {
     /** The official Al-Aniqa Lux logo, stored verbatim. Never recoloured or redrawn. */
     logoUrl: string | null;
+    /** Previously published logos, newest first, so a replacement is reversible. */
+    logoHistory: string[];
     name: string;
     tagline: I18nText;
     about: I18nText;

@@ -1,6 +1,8 @@
 import { lazy, Suspense, useEffect } from "react";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Toaster } from "sonner";
+import { LogoFavicon } from "@/components/brand/LogoFavicon";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AnnouncementBar } from "@/components/layout/AnnouncementBar";
 import { Footer } from "@/components/layout/Footer";
 import { Header } from "@/components/layout/Header";
@@ -57,11 +59,16 @@ function Shell() {
   return (
     <div className="flex min-h-[100svh] flex-col">
       <ScrollToTop />
+      {/* Keeps the tab icon in step with the published logo. */}
+      <LogoFavicon />
       <AnnouncementBar />
       <Header />
       <main id="main" className="flex-1">
-        <Suspense fallback={<RouteFallback />}>
-          <Routes>
+        {/* The chrome stays mounted: a failing page shows recoverable UI rather
+            than taking the header and footer down with it. */}
+        <ErrorBoundary>
+          <Suspense fallback={<RouteFallback />}>
+            <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/products" element={<Catalog preset="all" />} />
             <Route path="/pajamas" element={<Catalog preset="pajamas" />} />
@@ -80,9 +87,10 @@ function Shell() {
                 </RequireAuth>
               }
             />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </Suspense>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </Suspense>
+        </ErrorBoundary>
       </main>
       <Footer />
       <WhatsAppFab />

@@ -1,0 +1,10 @@
+{
+  "name": "@anika-lux/vite-shim",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Exposes a `vite` executable so a bare `vite` invocation resolves to the real Vite CLI via node.",
+  "bin": {
+    "vite": "./index.mjs"
+  }
+}

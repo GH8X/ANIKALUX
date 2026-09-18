@@ -3,7 +3,7 @@ import { ImagePlus, RotateCcw, Save, ShieldAlert, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ProductMultiSelect } from "@/components/admin/ProductMultiSelect";
 import { TranslationsField } from "@/components/admin/TranslationsField";
-import { Logo } from "@/components/brand/Logo";
+import { Logo, LOGO_SIZES } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +19,21 @@ import { useI18n } from "@/lib/i18n";
 import { IMAGE_ACCEPT, readImageFile } from "@/lib/image";
 import { useStore } from "@/lib/store";
 import type { SiteSettings } from "@/lib/types";
+import { cn } from "@/lib/utils";
+
+/** Renders the logo as it exists in the editor's draft, before publishing. */
+function DraftLogo({ src, size }: { src: string | null; size: "sm" | "md" | "lg" }) {
+  const { settings } = useStore();
+  if (!src) return <Logo size={size} />;
+  return (
+    <img
+      src={src}
+      alt={`${settings.brand.name} logo`}
+      className={cn("object-contain", LOGO_SIZES[size])}
+      draggable={false}
+    />
+  );
+}
 
 function SectionCard({
   title,
@@ -72,36 +87,102 @@ export function BrandPanel() {
   };
 
   const handleSave = () => {
-    saveSettings(draft);
+    const published = settings.brand.logoUrl;
+    const next = draft.brand.logoUrl;
+    // Keep the previously published logo so a replacement is reversible.
+    const brand =
+      next !== published && published
+        ? {
+            ...draft.brand,
+            logoHistory: [
+              published,
+              ...draft.brand.logoHistory.filter((url) => url !== published),
+            ].slice(0, 4),
+          }
+        : draft.brand;
+    saveSettings({ ...draft, brand });
+    setDraft((current) => ({ ...current, brand }));
     toast.success(t.toast.saved);
   };
 
   return (
     <div className="space-y-5">
       <SectionCard title={t.admin.brandLogo} description={t.admin.brandLogoHint}>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-          <div className="grid size-28 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-wine-900">
-            <Logo size="lg" />
-          </div>
-          <div className="space-y-3">
-            <input
-              ref={logoInput}
-              type="file"
-              accept={IMAGE_ACCEPT}
-              className="sr-only"
-              onChange={(event) => void uploadLogo(event.target.files)}
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" onClick={() => logoInput.current?.click()}>
-                <ImagePlus /> {t.admin.uploadLogo}
-              </Button>
-              {draft.brand.logoUrl && (
-                <Button variant="ghost" onClick={() => patchBrand({ logoUrl: null })}>
-                  <Trash2 /> {t.admin.removeLogo}
-                </Button>
-              )}
+        <div className="space-y-6">
+          <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+            {/* Shows the draft, not the published logo, so replacing is a
+                preview-then-publish step. */}
+            <div className="grid size-28 shrink-0 place-items-center overflow-hidden rounded-lg border border-border bg-wine-900">
+              <DraftLogo src={draft.brand.logoUrl} size="lg" />
             </div>
-            <p className="text-xs text-muted-foreground">{t.admin.logoRules}</p>
+            <div className="space-y-3">
+              <input
+                ref={logoInput}
+                type="file"
+                accept={IMAGE_ACCEPT}
+                className="sr-only"
+                onChange={(event) => void uploadLogo(event.target.files)}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={() => logoInput.current?.click()}>
+                  <ImagePlus /> {t.admin.uploadLogo}
+                </Button>
+                {draft.brand.logoUrl && (
+                  <Button variant="ghost" onClick={() => patchBrand({ logoUrl: null })}>
+                    <Trash2 /> {t.admin.removeLogo}
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{t.admin.logoRules}</p>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-border/70 bg-muted/40 p-4">
+            <p className="text-[0.72rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              {t.admin.logoPreview}
+            </p>
+            <p className="mt-1 text-[0.7rem] text-muted-foreground">{t.admin.logoPlacements}</p>
+            <div className="mt-4 flex flex-wrap items-end gap-6">
+              {(["lg", "md", "sm"] as const).map((size) => (
+                <div key={size} className="flex flex-col items-center gap-2">
+                  <div className="grid place-items-center rounded-md border border-border/70 bg-background p-1.5">
+                    <DraftLogo src={draft.brand.logoUrl} size={size} />
+                  </div>
+                  <span className="font-mono text-[0.6rem] text-muted-foreground">
+                    {LOGO_SIZES[size].match(/h-(\S+)/)?.[1]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-[0.72rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+              {t.admin.logoHistory}
+            </p>
+            {draft.brand.logoHistory.length === 0 ? (
+              <p className="mt-2 text-[0.72rem] text-muted-foreground">{t.admin.logoNone}</p>
+            ) : (
+              <ul className="mt-3 flex flex-wrap gap-3">
+                {draft.brand.logoHistory.map((url) => (
+                  <li key={url} className="flex flex-col items-center gap-2">
+                    <div className="grid size-16 place-items-center overflow-hidden rounded-md border border-border/70 bg-wine-900 p-1">
+                      <img src={url} alt="" className="size-full object-contain" />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        patchBrand({ logoUrl: url });
+                        toast.success(t.toast.updated);
+                      }}
+                    >
+                      {t.admin.logoRestore}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </SectionCard>

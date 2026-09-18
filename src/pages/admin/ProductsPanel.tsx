@@ -133,7 +133,8 @@ export function ProductsPanel() {
                     </p>
                   </div>
 
-                  <div className="flex shrink-0 items-center gap-1.5">
+                  {/* Wraps so the row cannot overflow a narrow phone. */}
+                  <div className="flex shrink-0 flex-wrap items-center gap-1.5">
                     <MoveButtons
                       upLabel={t.admin.moveUp}
                       downLabel={t.admin.moveDown}

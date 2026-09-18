@@ -24,6 +24,7 @@ export const defaultSettings: SiteSettings = {
   brand: {
     // Set the official logo file from Admin → Brand & Homepage.
     logoUrl: null,
+    logoHistory: [],
     name: "Al-Aniqa Lux",
     tagline: t(
       "Wholesale fashion & luxury pajamas",

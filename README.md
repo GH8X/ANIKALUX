@@ -36,6 +36,21 @@ public/brand/logo.jpg
 
 Until a file is present the site shows a neutral placeholder frame — it never invents a substitute mark. See `public/brand/README.txt`.
 
+### One source, every placement
+
+The header (desktop, laptop, mobile), the mobile menu, the footer, the homepage hero, the About page, the sign-in screen **and the favicon** all render the same resolved logo, so replacing it updates everywhere at once. `src/components/brand/Logo.tsx` resolves it (`useOfficialLogoSrc`), and `LogoFavicon.tsx` points the document `<link rel="icon">` at it — the URL is never hard-coded.
+
+### Publish vs. preview — important
+
+The two paths are **not** equivalent in the current architecture:
+
+| Path | Stored in | Visible to visitors |
+| --- | --- | --- |
+| `public/brand/logo.*` | the build | ✅ yes — commit it to publish |
+| Admin upload | CMS → localStorage | ❌ only the browser that uploaded it |
+
+The admin upload is for previewing and trying a logo (with a live in-context preview at header/menu/footer sizes), and it keeps the previous logos so a replacement can be restored. To make it visible to every visitor, either commit the file into `public/brand/` or move the store to a database — the swap point is documented in §7.
+
 ---
 
 ## 2. Admin dashboard
