@@ -1,4 +1,4 @@
-import { Facebook, Instagram, Mail, MessageCircle, Music2, Phone } from "lucide-react";
+import { Facebook, Instagram, Mail, MessageCircle, Music2, Phone, Send, Youtube } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
@@ -19,6 +19,8 @@ export function useSocialProfiles(): SocialProfile[] {
   const { settings } = useStore();
   const { t } = useI18n();
   const c = settings.contact;
+  const hidden = settings.social.hidden ?? [];
+  const isHidden = (key: string) => hidden.includes(key as never);
 
   const profiles: (SocialProfile | null)[] = [
     c.whatsapp
@@ -38,9 +40,16 @@ export function useSocialProfiles(): SocialProfile[] {
       ? { key: "facebook", label: t.contact.facebook, href: c.facebook, icon: Facebook }
       : null,
     c.tiktok ? { key: "tiktok", label: t.contact.tiktok, href: c.tiktok, icon: Music2 } : null,
+    settings.social.youtube
+      ? { key: "youtube", label: t.admin.youtube, href: settings.social.youtube, icon: Youtube }
+      : null,
+    settings.social.telegram
+      ? { key: "telegram", label: t.admin.telegram, href: settings.social.telegram, icon: Send }
+      : null,
   ];
 
-  return profiles.filter((p): p is SocialProfile => p !== null);
+  // The owner can switch any network off without losing the saved link.
+  return profiles.filter((p): p is SocialProfile => p !== null && !isHidden(p.key));
 }
 
 interface SocialLinksProps {

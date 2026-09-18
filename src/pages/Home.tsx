@@ -19,9 +19,15 @@ import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/button";
 import { Badge, Card } from "@/components/ui/surface";
 import { ProductGridSkeleton } from "@/components/States";
+import {
+  FaqSection,
+  LocationSection,
+  PromotionSection,
+  TestimonialsSection,
+} from "@/components/sections/ExtraSections";
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
-import type { Category } from "@/lib/types";
+import type { Category, HomeSectionKey } from "@/lib/types";
 import { cn, whatsappLink } from "@/lib/utils";
 
 /* ------------------------------------------------------------------ Hero */
@@ -686,10 +692,77 @@ function CtaSection() {
   );
 }
 
+/* ------------------------------------------------------- Section renderer */
+
+/**
+ * Renders one homepage section by key.
+ *
+ * The owner controls order and visibility from Admin → Homepage; this is the
+ * only place that has to know how a key maps to a component.
+ */
+function SectionByKey({ sectionKey }: { sectionKey: HomeSectionKey }) {
+  const { t } = useI18n();
+  const { settings } = useStore();
+
+  switch (sectionKey) {
+    case "hero":
+      return <Hero />;
+    case "categories":
+      return <CategoriesSection />;
+    case "promotion":
+      return <PromotionSection />;
+    case "newArrivals":
+      return (
+        <ProductSection
+          eyebrow={t.home.newEyebrow}
+          title={t.home.newTitle}
+          subtitle={t.home.newSubtitle}
+          filter={(p) => p.isNew}
+          viewAllTo="/new-arrivals"
+        />
+      );
+    case "bestSellers":
+      return (
+        <ProductSection
+          eyebrow={t.home.bestEyebrow}
+          title={t.home.bestTitle}
+          subtitle={t.home.bestSubtitle}
+          filter={(p) => p.isBestSeller}
+          viewAllTo="/products?sort=best"
+          alt
+        />
+      );
+    case "featured":
+      return (
+        <ProductSection
+          eyebrow={t.home.featuredEyebrow}
+          title={t.home.featuredTitle}
+          subtitle={t.home.featuredSubtitle}
+          productIds={settings.featuredProductIds}
+          viewAllTo="/products"
+        />
+      );
+    case "why":
+      return <WhySection />;
+    case "testimonials":
+      return <TestimonialsSection />;
+    case "faq":
+      return <FaqSection />;
+    case "about":
+      return <AboutSection />;
+    case "location":
+      return <LocationSection />;
+    case "cta":
+      return <CtaSection />;
+    default:
+      return null;
+  }
+}
+
 /* ------------------------------------------------------------------ Page */
 
 export function Home() {
-  const { t } = useI18n();
+  const { t, tx } = useI18n();
   const { settings, status, products } = useStore();
 
   const itemListLd = {
@@ -710,41 +783,16 @@ export function Home() {
   return (
     <>
       <Seo
-        title="Al-Aniqa Lux | Wholesale Clothing & Luxury Pajamas"
-        description={t.brand.description}
+        title={settings.seo.title || "Al-Aniqa Lux | Wholesale Clothing & Luxury Pajamas"}
+        description={tx(settings.seo.description, t.brand.description)}
+        image={settings.seo.ogImageUrl ?? undefined}
+        keywords={settings.seo.keywords || undefined}
         jsonLd={itemListLd}
       />
-      <Hero />
-      <CategoriesSection />
 
-      <ProductSection
-        eyebrow={t.home.newEyebrow}
-        title={t.home.newTitle}
-        subtitle={t.home.newSubtitle}
-        filter={(p) => p.isNew}
-        viewAllTo="/new-arrivals"
-      />
-
-      <ProductSection
-        eyebrow={t.home.bestEyebrow}
-        title={t.home.bestTitle}
-        subtitle={t.home.bestSubtitle}
-        filter={(p) => p.isBestSeller}
-        viewAllTo="/products?sort=best"
-        alt
-      />
-
-      <ProductSection
-        eyebrow={t.home.featuredEyebrow}
-        title={t.home.featuredTitle}
-        subtitle={t.home.featuredSubtitle}
-        productIds={settings.featuredProductIds}
-        viewAllTo="/products"
-      />
-
-      <WhySection />
-      <AboutSection />
-      <CtaSection />
+      {settings.homeSections.map((section) =>
+        section.visible ? <SectionByKey key={section.key} sectionKey={section.key} /> : null,
+      )}
 
       {status === "loading" && (
         <div className="container pb-16">

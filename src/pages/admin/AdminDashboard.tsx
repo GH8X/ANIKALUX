@@ -10,17 +10,54 @@ import { ProductsPanel } from "@/pages/admin/ProductsPanel";
 import { CategoriesPanel } from "@/pages/admin/CategoriesPanel";
 import { RequestsPanel } from "@/pages/admin/RequestsPanel";
 import { BrandPanel } from "@/pages/admin/BrandPanel";
+import { HomepagePanel } from "@/pages/admin/HomepagePanel";
+import { FaqPanel, MediaPanel, TestimonialsPanel } from "@/pages/admin/ContentPanels";
+import { LocationPanel, SeoPanel, SocialPanel } from "@/pages/admin/SitePanels";
+import { SettingsPanel } from "@/pages/admin/SettingsPanel";
+import { PreviewPanel } from "@/pages/admin/PreviewPanel";
 import { useI18n } from "@/lib/i18n";
 import { useStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-type TabKey = "overview" | "products" | "categories" | "requests" | "brand";
+type TabKey =
+  | "overview"
+  | "products"
+  | "categories"
+  | "homepage"
+  | "media"
+  | "requests"
+  | "testimonials"
+  | "faq"
+  | "social"
+  | "location"
+  | "seo"
+  | "settings"
+  | "preview"
+  | "brand";
+
+const TAB_KEYS: TabKey[] = [
+  "overview",
+  "products",
+  "categories",
+  "homepage",
+  "media",
+  "requests",
+  "testimonials",
+  "faq",
+  "social",
+  "location",
+  "seo",
+  "settings",
+  "preview",
+  "brand",
+];
 
 export function AdminDashboard() {
   const { t } = useI18n();
   const { settings, signOut, requests } = useStore();
   const [params, setParams] = useSearchParams();
-  const tabFromUrl = (params.get("tab") as TabKey) || "overview";
+  const requested = params.get("tab") as TabKey | null;
+  const tabFromUrl: TabKey = requested && TAB_KEYS.includes(requested) ? requested : "overview";
   const [tab, setTab] = useState<TabKey>(tabFromUrl);
 
   useEffect(() => {
@@ -39,11 +76,20 @@ export function AdminDashboard() {
     { key: "overview", label: t.admin.tabOverview },
     { key: "products", label: t.admin.tabProducts },
     { key: "categories", label: t.admin.tabCategories },
+    { key: "homepage", label: t.admin.tabHomepage },
+    { key: "media", label: t.admin.tabMedia },
     {
       key: "requests",
       label: t.admin.tabRequests,
-      badge: requests.filter((r) => r.status === "new").length || undefined,
+      badge: requests.filter((r) => r.status === "new" && !r.archived).length || undefined,
     },
+    { key: "testimonials", label: t.admin.tabTestimonials },
+    { key: "faq", label: t.admin.tabFaq },
+    { key: "social", label: t.admin.tabSocial },
+    { key: "location", label: t.admin.tabLocation },
+    { key: "seo", label: t.admin.tabSeo },
+    { key: "settings", label: t.admin.tabSettings },
+    { key: "preview", label: t.admin.tabPreview },
     { key: "brand", label: t.admin.tabBrand },
   ];
 
@@ -113,7 +159,16 @@ export function AdminDashboard() {
         {tab === "overview" && <OverviewPanel onNavigate={goTo} />}
         {tab === "products" && <ProductsPanel />}
         {tab === "categories" && <CategoriesPanel />}
+        {tab === "homepage" && <HomepagePanel />}
+        {tab === "media" && <MediaPanel />}
         {tab === "requests" && <RequestsPanel />}
+        {tab === "testimonials" && <TestimonialsPanel />}
+        {tab === "faq" && <FaqPanel />}
+        {tab === "social" && <SocialPanel />}
+        {tab === "location" && <LocationPanel />}
+        {tab === "seo" && <SeoPanel />}
+        {tab === "settings" && <SettingsPanel />}
+        {tab === "preview" && <PreviewPanel />}
         {tab === "brand" && <BrandPanel />}
       </div>
     </>

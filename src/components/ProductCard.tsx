@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowUpRight, Layers, ShoppingBag } from "lucide-react";
+import { ArrowUpRight, Layers, Plus, ShoppingBag } from "lucide-react";
+import { toast } from "sonner";
 import { ProductArt } from "@/components/brand/ProductArt";
 import { Badge } from "@/components/ui/surface";
 import { useI18n } from "@/lib/i18n";
+import { useInquiry } from "@/lib/inquiry";
 import { useStore } from "@/lib/store";
 import type { Product } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
@@ -17,6 +19,7 @@ interface ProductCardProps {
 export function ProductCard({ product, index = 0, eager = false }: ProductCardProps) {
   const { t, tx } = useI18n();
   const { categoryById, settings } = useStore();
+  const { add } = useInquiry();
   const reduce = useReducedMotion();
 
   const category = categoryById(product.categoryId);
@@ -56,6 +59,11 @@ export function ProductCard({ product, index = 0, eager = false }: ProductCardPr
             {product.isBestSeller && (
               <Badge variant="primary" className="shadow-soft">
                 {t.home.bestBadge}
+              </Badge>
+            )}
+            {product.badge && (
+              <Badge variant="cream" className="shadow-soft">
+                {product.badge}
               </Badge>
             )}
           </div>
@@ -123,6 +131,24 @@ export function ProductCard({ product, index = 0, eager = false }: ProductCardPr
                 <Layers className="size-3.5 text-gold-600" aria-hidden="true" />
                 {product.minOrderQty} {t.card.pieces}
               </p>
+              {product.stock !== null && (
+                <p
+                  className={cn(
+                    "mt-0.5 text-[0.66rem] font-medium",
+                    product.stock === 0
+                      ? "text-destructive"
+                      : product.stock <= 12
+                        ? "text-gold-700"
+                        : "text-muted-foreground",
+                  )}
+                >
+                  {product.stock === 0
+                    ? t.stock.out
+                    : product.stock <= 12
+                      ? `${t.stock.low} · ${product.stock}`
+                      : `${t.stock.inStock} · ${product.stock}`}
+                </p>
+              )}
             </div>
             <p className={cn("text-end font-display text-lg font-semibold", product.price === null && "text-muted-foreground")}>
               {product.price === null
@@ -139,6 +165,26 @@ export function ProductCard({ product, index = 0, eager = false }: ProductCardPr
               <ShoppingBag className="size-3.5" aria-hidden="true" />
               {t.card.request}
             </Link>
+            <button
+              type="button"
+              aria-label={`${t.inquiry.add} — ${tx(product.name)}`}
+              title={t.inquiry.add}
+              onClick={() => {
+                add({
+                  productId: product.id,
+                  code: product.code,
+                  name: tx(product.name),
+                  // Default to the wholesale minimum so a quote starts realistic.
+                  color: product.colors[0]?.name ?? "",
+                  size: product.sizes[0] ?? "",
+                  quantity: product.minOrderQty,
+                });
+                toast.success(t.inquiry.added);
+              }}
+              className="grid size-9 place-items-center rounded-md border border-border text-foreground/70 transition-colors duration-300 hover:border-gold-400/70 hover:text-primary"
+            >
+              <Plus className="size-4" aria-hidden="true" />
+            </button>
             <Link
               to={`/product/${product.slug}`}
               aria-label={`${t.card.quickView} — ${product.name.primary}`}

@@ -8,15 +8,21 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { defaultDatabase } from "./seed";
+import { defaultDatabase, defaultHomeSections } from "./seed";
+import { HOME_SECTIONS, type HomeSectionState } from "./types";
 import type {
   Category,
   Database,
+  FaqItem,
+  HomeSectionKey,
+  MediaAsset,
   Product,
   RequestStatus,
   SiteSettings,
+  Testimonial,
   WholesaleRequest,
 } from "./types";
+import { slugify } from "./utils";
 
 const STORAGE_KEY = "anika-lux.db.v1";
 const ADMIN_KEY = "anika-lux.admin";
@@ -28,20 +34,81 @@ export type StoreStatus = "loading" | "ready" | "error";
  * storage; swapping this module for a REST/Convex client is the only change
  * needed to move the catalogue to a server.
  */
+/**
+ * Fills in anything a previously stored database is missing.
+ *
+ * The nested settings objects are merged key by key on purpose: a shallow
+ * `{...defaults, ...stored}` would drop every field added after the stored copy
+ * was written, which would crash the pages that read them.
+ */
+function mergeHomeSections(stored: HomeSectionState[] | undefined): HomeSectionState[] {
+  if (!stored || stored.length === 0) return defaultHomeSections;
+  const known = stored.filter((section) => HOME_SECTIONS.includes(section.key));
+  // A stored order written before a section existed would silently hide it.
+  const missing = defaultHomeSections.filter(
+    (section) => !known.some((item) => item.key === section.key),
+  );
+  return [...known, ...missing];
+}
+
+function normalize(parsed: Partial<Database> | null): Database {
+  const stored: Partial<SiteSettings> = parsed?.settings ?? {};
+  const settings: SiteSettings = {
+    ...defaultDatabase.settings,
+    ...stored,
+    brand: { ...defaultDatabase.settings.brand, ...(stored.brand ?? {}) },
+    hero: { ...defaultDatabase.settings.hero, ...(stored.hero ?? {}) },
+    contact: { ...defaultDatabase.settings.contact, ...(stored.contact ?? {}) },
+    announcement: { ...defaultDatabase.settings.announcement, ...(stored.announcement ?? {}) },
+    seo: { ...defaultDatabase.settings.seo, ...(stored.seo ?? {}) },
+    location: { ...defaultDatabase.settings.location, ...(stored.location ?? {}) },
+    social: { ...defaultDatabase.settings.social, ...(stored.social ?? {}) },
+    promotion: { ...defaultDatabase.settings.promotion, ...(stored.promotion ?? {}) },
+    homeSections: mergeHomeSections(stored.homeSections),
+  };
+
+  const products = (parsed?.products ?? defaultDatabase.products).map((product, index) => ({
+    ...product,
+    badge: product.badge ?? "",
+    stock: product.stock ?? null,
+    videoUrl: product.videoUrl ?? null,
+    order: typeof product.order === "number" ? product.order : index + 1,
+  }));
+
+  const requests = (parsed?.requests ?? []).map((request) => ({
+    ...request,
+    notes: request.notes ?? "",
+    archived: request.archived ?? false,
+  }));
+
+  return {
+    settings,
+    categories: parsed?.categories?.length ? parsed.categories : defaultDatabase.categories,
+    products,
+    requests,
+    testimonials: parsed?.testimonials ?? [],
+    faq: parsed?.faq ?? [],
+    media: parsed?.media ?? [],
+  };
+}
+
 function readDatabase(): Database {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return defaultDatabase;
-    const parsed = JSON.parse(raw) as Partial<Database>;
-    return {
-      settings: { ...defaultDatabase.settings, ...(parsed.settings ?? {}) },
-      categories: parsed.categories?.length ? parsed.categories : defaultDatabase.categories,
-      products: parsed.products ?? defaultDatabase.products,
-      requests: parsed.requests ?? [],
-    };
+    return normalize(JSON.parse(raw) as Partial<Database>);
   } catch {
     return defaultDatabase;
   }
+}
+
+/** Swap two neighbouring entries of an ordered list. */
+function swap<T>(list: T[], index: number, direction: "up" | "down"): T[] {
+  const next = [...list];
+  const target = direction === "up" ? index - 1 : index + 1;
+  if (index < 0 || target < 0 || target >= next.length) return next;
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
 }
 
 function writeDatabase(db: Database) {
@@ -70,21 +137,51 @@ interface StoreValue {
   products: Product[];
   requests: WholesaleRequest[];
 
+  testimonials: Testimonial[];
+  faq: FaqItem[];
+  media: MediaAsset[];
+
   categoryById: (id: string) => Category | undefined;
   productById: (id: string) => Product | undefined;
   productBySlug: (slug: string) => Product | undefined;
   categoryBySlug: (slug: string) => Category | undefined;
 
+  /** Catalogue in the owner's merchandising order. */
+  orderedProducts: Product[];
   saveProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
+  duplicateProduct: (id: string) => Product | undefined;
+  moveProduct: (id: string, direction: "up" | "down") => void;
+
+  saveTestimonial: (item: Testimonial) => void;
+  deleteTestimonial: (id: string) => void;
+  moveTestimonial: (id: string, direction: "up" | "down") => void;
+
+  saveFaq: (item: FaqItem) => void;
+  deleteFaq: (id: string) => void;
+  moveFaq: (id: string, direction: "up" | "down") => void;
+
+  addMedia: (asset: Omit<MediaAsset, "id" | "createdAt">) => MediaAsset;
+  deleteMedia: (id: string) => void;
+
+  toggleHomeSection: (key: HomeSectionKey) => void;
+  moveHomeSection: (key: HomeSectionKey, direction: "up" | "down") => void;
+  resetHomeSections: () => void;
   saveCategory: (category: Category) => void;
   deleteCategory: (id: string) => void;
   moveCategory: (id: string, direction: "up" | "down") => void;
   saveSettings: (patch: Partial<SiteSettings>) => void;
   createRequest: (
-    input: Omit<WholesaleRequest, "id" | "status" | "createdAt" | "updatedAt">,
+    input: Omit<
+      WholesaleRequest,
+      "id" | "status" | "createdAt" | "updatedAt" | "notes" | "archived"
+    >,
   ) => WholesaleRequest;
   setRequestStatus: (id: string, status: RequestStatus) => void;
+  updateRequest: (
+    id: string,
+    patch: Partial<Pick<WholesaleRequest, "notes" | "archived" | "status">>,
+  ) => void;
   deleteRequest: (id: string) => void;
   resetDatabase: () => void;
 
@@ -161,9 +258,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       settings: db.settings,
       categories: sortedCategories,
       products: db.products,
+      testimonials: [...db.testimonials].sort((a, b) => a.order - b.order),
+      faq: [...db.faq].sort((a, b) => a.order - b.order),
+      media: [...db.media].sort(
+        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+      ),
       requests: [...db.requests].sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
       ),
+
+      orderedProducts: [...db.products].sort((a, b) => a.order - b.order),
 
       categoryById: (id) => db.categories.find((c) => c.id === id),
       productById: (id) => db.products.find((p) => p.id === id),
@@ -191,6 +295,122 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             newArrivalIds: draft.settings.newArrivalIds.filter((x) => x !== id),
             bestSellerIds: draft.settings.bestSellerIds.filter((x) => x !== id),
           },
+        })),
+
+      duplicateProduct: (id) => {
+        const source = db.products.find((p) => p.id === id);
+        if (!source) return undefined;
+        const code = `${source.code}-2`;
+        const copy: Product = {
+          ...source,
+          id: newId("prd"),
+          code,
+          slug: `${slugify(code)}-${slugify(source.name.primary)}`,
+          name: { ...source.name, primary: `${source.name.primary} (copy)` },
+          colors: source.colors.map((c, i) => ({ ...c, id: `${id}-copy-c${i}` })),
+          images: source.images.map((img) => ({ ...img, id: newId("img") })),
+          mainImageId: null,
+          order: Math.max(0, ...db.products.map((p) => p.order)) + 1,
+          createdAt: new Date().toISOString(),
+        };
+        copy.mainImageId = copy.images[0]?.id ?? null;
+        update((draft) => ({ ...draft, products: [...draft.products, copy] }));
+        return copy;
+      },
+
+      moveProduct: (id, direction) =>
+        update((draft) => {
+          const ordered = [...draft.products].sort((a, b) => a.order - b.order);
+          const index = ordered.findIndex((p) => p.id === id);
+          return {
+            ...draft,
+            products: swap(ordered, index, direction).map((p, i) => ({ ...p, order: i + 1 })),
+          };
+        }),
+
+      saveTestimonial: (item) =>
+        update((draft) => {
+          const exists = draft.testimonials.some((x) => x.id === item.id);
+          return {
+            ...draft,
+            testimonials: exists
+              ? draft.testimonials.map((x) => (x.id === item.id ? item : x))
+              : [...draft.testimonials, item],
+          };
+        }),
+
+      deleteTestimonial: (id) =>
+        update((draft) => ({
+          ...draft,
+          testimonials: draft.testimonials.filter((x) => x.id !== id),
+        })),
+
+      moveTestimonial: (id, direction) =>
+        update((draft) => {
+          const ordered = [...draft.testimonials].sort((a, b) => a.order - b.order);
+          const index = ordered.findIndex((x) => x.id === id);
+          return {
+            ...draft,
+            testimonials: swap(ordered, index, direction).map((x, i) => ({ ...x, order: i + 1 })),
+          };
+        }),
+
+      saveFaq: (item) =>
+        update((draft) => {
+          const exists = draft.faq.some((x) => x.id === item.id);
+          return {
+            ...draft,
+            faq: exists ? draft.faq.map((x) => (x.id === item.id ? item : x)) : [...draft.faq, item],
+          };
+        }),
+
+      deleteFaq: (id) =>
+        update((draft) => ({ ...draft, faq: draft.faq.filter((x) => x.id !== id) })),
+
+      moveFaq: (id, direction) =>
+        update((draft) => {
+          const ordered = [...draft.faq].sort((a, b) => a.order - b.order);
+          const index = ordered.findIndex((x) => x.id === id);
+          return {
+            ...draft,
+            faq: swap(ordered, index, direction).map((x, i) => ({ ...x, order: i + 1 })),
+          };
+        }),
+
+      addMedia: (asset) => {
+        const created: MediaAsset = { ...asset, id: newId("med"), createdAt: new Date().toISOString() };
+        update((draft) => ({ ...draft, media: [created, ...draft.media] }));
+        return created;
+      },
+
+      deleteMedia: (id) =>
+        update((draft) => ({ ...draft, media: draft.media.filter((m) => m.id !== id) })),
+
+      toggleHomeSection: (key) =>
+        update((draft) => ({
+          ...draft,
+          settings: {
+            ...draft.settings,
+            homeSections: draft.settings.homeSections.map((section) =>
+              section.key === key ? { ...section, visible: !section.visible } : section,
+            ),
+          },
+        })),
+
+      moveHomeSection: (key, direction) =>
+        update((draft) => {
+          const list = draft.settings.homeSections;
+          const index = list.findIndex((s) => s.key === key);
+          return {
+            ...draft,
+            settings: { ...draft.settings, homeSections: swap(list, index, direction) },
+          };
+        }),
+
+      resetHomeSections: () =>
+        update((draft) => ({
+          ...draft,
+          settings: { ...draft.settings, homeSections: defaultHomeSections },
         })),
 
       saveCategory: (category) =>
@@ -234,6 +454,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           status: "new",
           createdAt: now,
           updatedAt: now,
+          notes: "",
+          archived: false,
         };
         update((draft) => ({ ...draft, requests: [request, ...draft.requests] }));
         return request;
@@ -244,6 +466,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ...draft,
           requests: draft.requests.map((r) =>
             r.id === id ? { ...r, status: next, updatedAt: new Date().toISOString() } : r,
+          ),
+        })),
+
+      updateRequest: (id, patch) =>
+        update((draft) => ({
+          ...draft,
+          requests: draft.requests.map((r) =>
+            r.id === id ? { ...r, ...patch, updatedAt: new Date().toISOString() } : r,
           ),
         })),
 

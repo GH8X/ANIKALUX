@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ExternalLink, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { Copy, ExternalLink, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ProductFormDialog } from "@/pages/admin/ProductFormDialog";
+import { MoveButtons } from "@/components/admin/PanelShell";
 import { EmptyState } from "@/components/States";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
@@ -22,7 +23,8 @@ import { formatPrice } from "@/lib/utils";
 
 export function ProductsPanel() {
   const { t, tx } = useI18n();
-  const { products, categoryById, deleteProduct } = useStore();
+  const { orderedProducts, categoryById, deleteProduct, duplicateProduct, moveProduct } =
+    useStore();
   const [query, setQuery] = useState("");
   const [editing, setEditing] = useState<Product | null>(null);
   const [formOpen, setFormOpen] = useState(false);
@@ -30,13 +32,13 @@ export function ProductsPanel() {
 
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
-    if (!needle) return products;
-    return products.filter(
+    if (!needle) return orderedProducts;
+    return orderedProducts.filter(
       (product) =>
         product.name.primary.toLowerCase().includes(needle) ||
         product.code.toLowerCase().includes(needle),
     );
-  }, [products, query]);
+  }, [orderedProducts, query]);
 
   const openCreate = () => {
     setEditing(null);
@@ -132,6 +134,27 @@ export function ProductsPanel() {
                   </div>
 
                   <div className="flex shrink-0 items-center gap-1.5">
+                    <MoveButtons
+                      upLabel={t.admin.moveUp}
+                      downLabel={t.admin.moveDown}
+                      canUp={filtered[0]?.id !== product.id}
+                      canDown={filtered[filtered.length - 1]?.id !== product.id}
+                      onMove={(direction) => moveProduct(product.id, direction)}
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label={t.admin.duplicate}
+                      title={t.admin.duplicate}
+                      onClick={() => {
+                        const copy = duplicateProduct(product.id);
+                        toast[copy ? "success" : "error"](
+                          copy ? t.toast.created : t.toast.error,
+                        );
+                      }}
+                    >
+                      <Copy />
+                    </Button>
                     <Button asChild variant="ghost" size="icon" aria-label={t.card.quickView}>
                       <Link to={`/product/${product.slug}`} target="_blank" rel="noopener noreferrer">
                         <ExternalLink />
