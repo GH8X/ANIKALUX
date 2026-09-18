@@ -1,0 +1,10 @@
+{
+  "name": "@anika-lux/build-runner",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Exposes a `build` executable so a bare `build` build command resolves to the project's real Vite build.",
+  "bin": {
+    "build": "./index.mjs"
+  }
+}

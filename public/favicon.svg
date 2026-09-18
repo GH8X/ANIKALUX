@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Al-Aniqa Lux">
+  <rect width="64" height="64" rx="14" fill="#6E1529" />
+  <rect x="7" y="7" width="50" height="50" rx="9" fill="none" stroke="#F4E3C1" stroke-width="1.5" opacity="0.75" />
+  <path d="M20 42c6-2 9-7 12-13 3-6 6-10 10-11" fill="none" stroke="#F4E3C1" stroke-width="3" stroke-linecap="round" />
+  <circle cx="43" cy="20" r="2.6" fill="#C4A05A" />
+</svg>
