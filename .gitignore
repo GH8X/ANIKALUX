@@ -1,6 +1,7 @@
 node_modules
 dist
 dist-ssr
+isolate/
 *.local
 .DS_Store
 .env
